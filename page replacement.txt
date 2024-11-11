@@ -1,0 +1,134 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class PageReplacement {
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Choose page replacement algorithm (1 for FIFO, 2 for LRU): ");
+        int algorithmChoice = scanner.nextInt();
+
+        System.out.print("Enter the number of pages: ");
+        int numPages = scanner.nextInt();
+        int[] pageSequence = new int[numPages];
+
+        System.out.print("Enter the page numbers: ");
+        for (int i = 0; i < numPages; i++) {
+            pageSequence[i] = scanner.nextInt();
+        }
+
+        System.out.print("Enter the frame capacity: ");
+        int frameCapacity = scanner.nextInt();
+
+        if (algorithmChoice == 1) {
+            fifoPageReplacement(pageSequence, frameCapacity);
+        } else if (algorithmChoice == 2) {
+            lruPageReplacement(pageSequence, frameCapacity);
+        } else {
+            System.out.println("Invalid choice. Please select 1 for FIFO or 2 for LRU.");
+        }
+        
+        scanner.close();
+    }
+
+    // FIFO Page Replacement Algorithm
+    public static void fifoPageReplacement(int[] pageSequence, int frameCapacity) {
+        int[] frames = new int[frameCapacity];  // Holds pages in memory frames
+        int[][] table = new int[pageSequence.length][frameCapacity]; // To display frame content per step
+        int hitCount = 0, faultCount = 0, nextToReplace = 0;
+
+        // Initialize frames to empty (-1 represents an empty frame)
+        for (int i = 0; i < frameCapacity; i++) frames[i] = -1;
+
+        System.out.println("\nFIFO Page Replacement Simulation");
+        System.out.println("----------------------------------------------------------------------");
+        for (int i = 0; i < pageSequence.length; i++) {
+            boolean pageHit = false;
+
+            // Check if the page is already in any frame
+            for (int j = 0; j < frameCapacity; j++) {
+                if (frames[j] == pageSequence[i]) {
+                    pageHit = true;
+                    hitCount++;
+                    System.out.print(" H ");
+                    break;
+                }
+            }
+
+            // If it's a page fault (not in any frame), replace the next frame in order
+            if (!pageHit) {
+                frames[nextToReplace] = pageSequence[i];
+                nextToReplace = (nextToReplace + 1) % frameCapacity;
+                faultCount++;
+                System.out.print(" F ");
+            }
+
+            // Copy frame state to the table for output display
+            System.arraycopy(frames, 0, table[i], 0, frameCapacity);
+        }
+
+        // Print the final frame states and the hit/fault ratios
+        printPageTable(table, frameCapacity);
+        printRatios(hitCount, faultCount, pageSequence.length);
+    }
+
+    // LRU Page Replacement Algorithm
+    public static void lruPageReplacement(int[] pageSequence, int frameCapacity) {
+        ArrayList<Integer> lruFrames = new ArrayList<>(frameCapacity); // Track frames in LRU order
+        int[][] table = new int[pageSequence.length][frameCapacity];
+        int hitCount = 0, faultCount = 0;
+
+        System.out.println("\nLRU Page Replacement Simulation");
+        System.out.println("----------------------------------------------------------------------");
+        for (int i = 0; i < pageSequence.length; i++) {
+            if (lruFrames.contains(pageSequence[i])) {
+                lruFrames.remove((Integer) pageSequence[i]);
+                hitCount++;
+                System.out.print(" H ");
+            } else {
+                if (lruFrames.size() == frameCapacity) {
+                    lruFrames.remove(0); // Remove the least recently used page
+                }
+                faultCount++;
+                System.out.print(" F ");
+            }
+            lruFrames.add(pageSequence[i]);
+
+            // Fill table with the current state of frames
+            for (int j = 0; j < lruFrames.size(); j++) {
+                table[i][j] = lruFrames.get(j);
+            }
+            for (int j = lruFrames.size(); j < frameCapacity; j++) {
+                table[i][j] = -1; // Empty space for unused frames
+            }
+        }
+
+        // Display the table and the hit/fault ratios
+        printPageTable(table, frameCapacity);
+        printRatios(hitCount, faultCount, pageSequence.length);
+    }
+
+    // Display the page table with each frame's content
+    public static void printPageTable(int[][] table, int frameCapacity) {
+        System.out.println("\n----------------------------------------------------------------------");
+        for (int i = 0; i < frameCapacity; i++) {
+            for (int j = 0; j < table.length; j++) {
+                if (table[j][i] == -1) {
+                    System.out.print("    "); // Empty frames are displayed as spaces
+                } else {
+                    System.out.printf("%3d ", table[j][i]);
+                }
+            }
+            System.out.println();
+        }
+        System.out.println("----------------------------------------------------------------------");
+    }
+
+    // Calculate and display hit and fault ratios
+    public static void printRatios(int hitCount, int faultCount, int totalPages) {
+        double hitRatio = ((double) hitCount / totalPages) * 100;
+        double faultRatio = ((double) faultCount / totalPages) * 100;
+        System.out.println("Total Page Faults: " + faultCount + "\nTotal Page Hits: " + hitCount);
+        System.out.printf("Hit Ratio: %.2f%%\nFault Ratio: %.2f%%\n", hitRatio, faultRatio);
+    }
+}
